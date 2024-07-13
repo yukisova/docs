@@ -4,12 +4,24 @@ import navbar from "./navbar.js";
 import sidebar from "./sidebar.js";
 
 export default hopeTheme({
-  hostname: "https://vuepress-theme-hope-docs-demo.netlify.app",
+  // 当前网站所部署到的域名
+  hostname: "",
 
+  // 文章显示的默认作者
   author: {
-    name: "Mr.Hope",
-    url: "https://mister-hope.com",
+    // 作者姓名
+    name: "萧箫",
+    // 作者网站
+    url: "",
+    // 作者邮箱
+    email: "",
   },
+
+  // 站点的默认协议
+  license:"",
+
+  // 站点的图标？疑似废弃
+  // favicon: "",
 
   iconAssets: "fontawesome-with-brands",
 
@@ -47,14 +59,7 @@ export default hopeTheme({
   // 在这里配置主题提供的插件
   plugins: {
     // 注意: 仅用于测试! 你必须自行生成并在生产环境中使用自己的评论服务
-    comment: {
-      provider: "Giscus",
-      repo: "vuepress-theme-hope/giscus-discussions",
-      repoId: "R_kgDOG_Pt2A",
-      category: "Announcements",
-      categoryId: "DIC_kwDOG_Pt2M4COD69",
-    },
-
+    
     components: {
       components: ["Badge", "VPCard"],
     },
