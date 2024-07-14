@@ -1,0 +1,3 @@
+---
+title: python函数
+---
