@@ -8,6 +8,7 @@ export default sidebar({
     "",
     {
       text: "Python学习",
+      icon: "python",
       prefix: "dirPython/",
       children: "structure"
     },

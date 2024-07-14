@@ -23,7 +23,7 @@ export default hopeTheme({
   // 站点的图标？疑似废弃
   // favicon: "",
 
-  iconAssets: "fontawesome-with-brands",
+  iconAssets: "fontawesome",
 
   logo: "https://theme-hope-assets.vuejs.press/logo.svg",
 
