@@ -1,4 +1,5 @@
 ---
+# home: True
 title: 首页
 ---
 

@@ -66,6 +66,8 @@ export default hopeTheme({
 
     // 此处开启了很多功能用于演示，你应仅保留用到的功能。
     mdEnhance: {
+      footnote: true,
+      alert: true,
       align: true,
       attrs: true,
       codetabs: true,
@@ -125,9 +127,9 @@ export default hopeTheme({
       // },
 
       // 在启用之前安装 reveal.js
-      // revealJs: {
-      //   plugins: ["highlight", "math", "search", "notes", "zoom"],
-      // },
+      revealJs: {
+        plugins: ["highlight", "math", "search", "notes", "zoom"],
+      },
 
       // 在启用之前安装 @vue/repl
       // vuePlayground: true,

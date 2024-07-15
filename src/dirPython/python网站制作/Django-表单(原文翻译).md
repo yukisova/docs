@@ -88,6 +88,138 @@ Form实例具有一个`is_valid()`方法，该方法为所有字段运行验证�
 <input id="your_name" type="text" name="your_name" maxlength="100" required>
 ```
 
-### 在视图函数中处理表单
+### 在视图函数：实例化表单
 发送到Django网站的表单数据由视图处理，并且通常是发布表单的同一个视图。因此也允许我们重用一些相同的逻辑。  
 为了处理表单，我们需要在想要发布表单的URL对应的视图中实例化它：  
+```python
+from django.http import HttpResponseRedirect
+from django.shortcuts import render
+
+from .forms import NameForm
+
+def get_name(request):
+    # if this is a POST request we need to process the form data
+    if request.method == "POST":
+        # create a form instance and populate it with data from the request:
+        form = NameForm(request.POST)
+        # check whether it's valid:
+        if form.is_valid():
+            # process the data in form.cleaned_data as required
+            # ...
+            # redirect to a new URL:
+            return HttpResponseRedirect("/thanks/")
+
+    # if a GET (or any other method) we'll create a blank form
+    else:
+        form = NameForm()
+
+    return render(request, "name.html", {"form": form})
+```
+如果我们使用GET请求到达这个视图，它会创建一个空的表单实例，并将其放在模板上下文中以进行渲染。这是我们第一次访问该URL时预期会发生的情况。  
+如果表单是通过POST请求提交的，视图将再次创建一个表单实例，并用请求中的数据填充它：form = NameForm(request.POST)。这被称为“将数据绑定到表单”（此时它是一个已绑定的表单）。  
+我们调用表单的is_valid()方法；如果它不是True，我们将带着表单返回模板。这次，表单不再为空（未绑定），因此HTML表单将被之前提交的数据填充，用户可以根据需要进行编辑和更正。  
+如果is_valid()是True，我们现在可以在其cleaned_data属性中找到所有经过验证的表单数据。我们可以使用这些数据来更新数据库或进行其他处理，然后向浏览器发送HTTP重定向，告诉它接下来去哪里，而不是直接显示表单或处理结果。  
+
+### 在模版文件中插入表单
+```html
+<form action="/your-name/" method="post">
+    {% csrf_token %}
+    {{ form }}
+    <input type="submit" value="Submit">
+</form>
+```
+因为使用Django后端代替前端实例化了表单，表单类可以当做一个模版变量插入form标签中
+:::danger
+表单和跨站请求伪造（CSRF）保护  
+Django 提供了一种易于使用的跨站请求伪造（CSRF）保护机制。在启用 CSRF 保护的情况下通过 POST 提交表单时，您必须使用如前面示例中所示的 csrf_token 模板标签。然而，由于 CSRF 保护并不直接与模板中的表单相关联，因此在本文档的后续示例中省略了这个标签。
+:::
+:::danger
+HTML5 输入类型和浏览器验证  
+如果您的表单包含 URLField、EmailField 或任何整数字段类型，Django 将使用 HTML5 的 url、email 和 number 输入类型。默认情况下，浏览器可能会对这些字段应用自己的验证，这些验证可能比 Django 的验证更严格。如果您想禁用这种行为，可以在表单标签上设置 novalidate 属性，或者为该字段指定不同的控件，如 TextInput。
+:::
+我们现在有一个工作的Web表单，它由Django表单描述，由视图处理，并渲染为HTML`<form>`。  
+这是您开始所需要的全部内容，但表单框架为您提供了更多功能。一旦您理解了上述过程的基本知识，您应该就能够理解表单系统的其他功能，并准备好学习更多关于底层机制的知识。
+
+## 关于Django表单类的更多信息  
+所有表单类都是作为django.forms.Form或django.forms.ModelForm的子类创建的。可以将ModelForm视为Form的子类。但它们都从（私有的）BaseForm类继承共同的功能，并不需要关心如何实现其功能
+:::danger
+模型和表单  
+事实上，如果您的表单将直接用于添加或编辑Django模型，ModelForm可以为您节省大量时间、精力和代码，因为它会根据Model类构建表单以及相应的字段和属性。
+:::
+### 绑定和非绑定表单区分  
+区分绑定和非绑定表单很重要：
+- 非绑定表单没有与之关联的数据。当呈现给用户时，它将为空或包含默认值。
+- 绑定表单具有已提交的数据，因此可用于判断这些数据是否有效。针对无效数据可以包含内联错误消息，告诉用户需要更正哪些数据。
+- 表单的is_bound属性将告诉您表单是否有数据与之绑定。
+
+## 更多关于表单的说明
+考虑一个比上面最小示例更有用的表单形式，我们可以使用它在个人网站上实现“联系我”的功能：
+```python
+from django import forms  
+  
+class ContactForm(forms.Form):  
+    subject = forms.CharField(max_length=100)  
+    message = forms.CharField(widget=forms.Textarea)  
+    sender = forms.EmailField()  
+    cc_myself = forms.BooleanField(required=False)
+```
+我们之前的表单使用了一个单一字段your_name，这是一个CharField。在这个例子中，我们的表单有四个字段：subject、message、sender和cc_myself。CharField、EmailField和BooleanField只是可用的字段类型中的三种；完整的列表可以在表单字段中找到。
+### Widgets
+每个表单字段都有一个对应的Widget类，该类又对应于HTML表单中的一个小部件，如`<input type="text">`。  
+在大多数情况下，字段会有一个合理的默认小部件。例如，默认情况下，CharField会有一个TextInput小部件，它在HTML中生成一个`<input type="text">`。如果你需要`<textarea>`，那么在定义表单字段时，你需要指定对应的Widget值，正如我们对message字段所做的那样。  
+### 字段数据
+无论通过表单提交了什么数据，一旦它成功通过调用is_valid()方法进行验证（并且is_valid()返回了True），验证后的表单数据将位于form.cleaned_data字典中。这些数据已经被很好地转换成了Python类型。
+:::danger
+此时，你仍然可以直接从request.POST访问未验证的数据，但验证后的数据更好。在上面的联系表单示例中，cc_myself将是一个布尔值。同样，像IntegerField和FloatField这样的字段分别将值转换为Python的int和float类型。
+:::
+以下是如何在处理此表单的视图中处理表单数据的方法：  
+```python
+from django.core.mail import send_mail
+
+# 在视图函数中
+if form.is_valid():
+    subject = form.cleaned_data["subject"]
+    message = form.cleaned_data["message"]
+    sender = form.cleaned_data["sender"]
+    cc_myself = form.cleaned_data["cc_myself"]
+
+    recipients = ["info@example.com"]
+    if cc_myself:
+        recipients.append(sender)
+
+    send_mail(subject, message, sender, recipients)
+    return HttpResponseRedirect("/thanks/")
+```
+一些字段类型需要额外的处理。例如，使用表单上传的文件需要不同的处理方式（它们可以从request.FILES中获取，而不是从request.POST）。有关如何使用表单处理文件上传的详细信息，请参阅[]()
+
+## 处理模版中的表单元素
+要将表单放入模板中，你所需做的就是将表单实例放入模板的上下文中。因此，如果你在上下文中将表单命名为form，那么`{{ form }}`将会适当地渲染其`<label>`与`<input>`元素。
+:::
+额外的表单模板元素
+不要忘记，表单的输出并不包括周围的`<form>`标签或表单的提交控件。你需要自己提供这些元素。
+:::
+
+### 可复用的表单模板
+渲染表单时的HTML输出本身是通过模板生成的。你可以通过创建适当的模板文件并设置一个自定义的FORM_RENDERER来在站点范围内使用form_template_name来控制这一点。你还可以通过覆盖表单的template_name属性来自定义每个表单，以使用自定义模板渲染表单，或者将模板名称直接传递给`Form.render()`。
+下面的示例将导致`{{ form }}`被渲染为form_snippet.html模板的输出。
+```html
+<!-- 在模版文件中的形式 -->
+{{ form }}
+<!-- 最终渲染出的html文件 -->
+{% for field in form %}  
+    <div class="fieldWrapper">  
+        {{ field.errors }}  
+        {{ field.label_tag }} {{ field }}  
+    </div>  
+{% endfor %}
+```
+然后，你可以在配置文件中配置FORM_RENDERER表单渲染器：  
+```python
+from django.forms.renderers import TemplatesSetting
+
+class CustomFormRenderer(TemplatesSetting):
+    form_template_name = "form_snippet.html"
+
+FORM_RENDERER = "project.settings.CustomFormRenderer"
+```
+
